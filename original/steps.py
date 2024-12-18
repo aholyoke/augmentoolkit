@@ -85,7 +85,6 @@ import os
 def convert_logging_to_dataset(input_pth=None, output_pth=None):
     print("entering saving mode")
     global has_pushed_yet
-    
     output_dir = os.path.join(obj_conf["PATH"]["OUTPUT"], input_pth)
     
     print(f"Converting {output_dir} to a dataset")
@@ -192,10 +191,7 @@ def convert_revised_questions_to_question_generation_training(qa_dicts_by_text, 
             json.dump(convo,out_file_json)
         dataset.to_parquet(f"hf://datasets/{HUB_PATH}/data/train-qgen.parquet")
         os.remove(output_file_path)
-    
-    
-    
-    
+
 
 def extract_reasoning_from_context_check(response):
     # print("\n----\/----\n RESPONSE:")
@@ -608,12 +604,17 @@ def parse_validation_step(response):
     # print("!!! RESPONSE !!!")
     # print(response)
     decision_pattern = re.compile(r"Critical Evaluation and Final Judgment:(.+)", re.DOTALL | re.IGNORECASE)
-    determination = decision_pattern.search(response).group(1).strip()
+
+    match_obj = decision_pattern.search(response)
+    if match_obj is None:
+        return False, response
+
+    determination = match_obj.group(1).strip()
+    
     # print("!!! DETERMINATION !!!")
     # print(determination)
     if (
         "irrelevant" in determination.lower()
-        or "Irrelevant" in determination.lower()
         or "mostly" in determination.lower()
         or "partial" in determination.lower()
         or "introduces information not present in the text" in determination.lower()
@@ -740,6 +741,7 @@ async def vet_question_loop( # NOTE adding the pipelinestep class would make thi
                 # print("JUDGEMENT:")
                 # print(judgement)
                 if not judgement[0]:  # if not relevant
+
                     dissenting_reasoning = judgement[1]
                     print("\nNegative Vote Cast! Here was the reasoning:\n")
                     print(dissenting_reasoning)

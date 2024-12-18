@@ -85,16 +85,13 @@ class PipelineStep:
             )
             
             # print(processed_data)
-            
             result, full_output = await generator.generate(**processed_data, **self.static_arguments)
             
             return result, full_output
         except Exception as e:
             print(e)
             traceback.print_exc()
-    
-    
-    
+
     def save(self, result=None,
     full_output=None,
     idx=None,

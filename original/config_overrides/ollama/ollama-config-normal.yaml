@@ -1,9 +1,9 @@
 API:
   LARGE_API_KEY: key-here
-  LARGE_MODEL: mistral
+  LARGE_MODEL: llama3.2
   LARGE_BASE_URL: http://localhost:11434/v1
   LARGE_MODE: api
-  SMALL_MODEL: mistral
+  SMALL_MODEL: llama3.2
   SMALL_BASE_URL: http://localhost:11434/v1
   SMALL_API_KEY: key-here
   SMALL_MODE: api

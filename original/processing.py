@@ -127,7 +127,7 @@ async def main():
         steps.scrape_text_using_config(start_url=START_URL, max_books=MAX_BOOKS, max_failures=MAX_FAILURES)
     
 
-    extensions = [".txt", ".md", ".pdf", ".docx", ".epub", ".html"]
+    extensions = [".txt", ".md", ".pdf", ".docx", ".epub", ".html", ".csv"]
     
     print(f"\n\n\nUSE FILENAMES: {USE_FILENAMES}")
 
@@ -139,14 +139,14 @@ async def main():
     if source_texts:
         print(source_texts)
     else:
-        print(f"No source texts found in: {INPUT_FOLDER}")
+        raise ValueError(f"No source texts found in: {INPUT_FOLDER}")
+
     
     # ## Below: Defines and imports functions that you will probably use no matter what cells in the script you choose to run:
 
     print(
         "\n\n\nIMPORTANT NOTE! Augmentoolkit prints a lot of stuff when it runs. Including tracebacks caused by model errors. Most errors are the result of the models, not the code, and any tracebacks you see were almost certainly handled. So: don't panic! You're gonna make it! Alright that's the end of this PSA. Happy dataset generation!\n\n\n"
     )
-
     
     import uuid
 
@@ -229,8 +229,6 @@ async def main():
         print("No paragraphs processed. Likely you have the wrong input directory path, or there's nothing in there. Check your input directory path?")
         sys.exit(1)
 
-    print(paragraphs_processed[:3])
-
     import json
     
     from tqdm import tqdm
@@ -269,11 +267,9 @@ async def main():
         print("Converting generations to training data")
         steps.convert_logging_to_dataset(input_pth=os.path.join("judge_paragraph_generations", "intermediate_generations"), output_pth="judge_paragraph_generations")
 
-    if len(filtered_worthy_for_questions) == 0:
-        print("No paragraphs were judged worthy for questions. Either the judgement step thinks everything you added is metadata or has no factual information, or your input path is wrong, or the model is being stupid. Check your input directory path, your model, and your input data. The intermediate outputs at the end of each file in ./output/judge_paragraph_generations/intermediate_generations/ may help you diagnose the problem.")
-        sys.exit(1)
-    print(filtered_worthy_for_questions[0])
-    
+    if not filtered_worthy_for_questions:
+        raise ValueError("No paragraphs were judged worthy for questions. Either the judgement step thinks everything you added is metadata or has no factual information, or your input path is wrong, or the model is being stupid. Check your input directory path, your model, and your input data. The intermediate outputs at the end of each file in ./output/judge_paragraph_generations/intermediate_generations/ may help you diagnose the problem.")
+
     # PHASE 0 END
     print("\n\nCOMPLETED PHASE 0")
     if WORK_IN_PHASES and PHASE_INDEX == 0:
@@ -301,7 +297,10 @@ async def main():
     limited_tasks_qgen = [run_task_with_limit(task) for task in tasks]
     for future in tqdmasyncio.tqdm.as_completed(limited_tasks_qgen):
         await future
-    
+
+    if not list(filter(None, generated_qa_dicts)):
+        raise ValueError("No QA dicts were generated")
+
     # PHASE 1 END
     print("COMPLETED PHASE 1")
     if WORK_IN_PHASES and PHASE_INDEX == 1:
@@ -309,30 +308,32 @@ async def main():
         sys.exit(0)
     ####
     
-    vetted_qa_dicts = []
-    qa_dicts_dir_checked = os.path.join(config["PATH"]["OUTPUT"], "qatuples_filtered")
-    if not os.path.exists(qa_dicts_dir_checked):
-        os.makedirs(qa_dicts_dir_checked)
-    
-    print(generated_qa_dicts[0])
-    
-    tasks = [
-        steps.vet_question_loop(
-            question_answer_dict,
-            question_group_id=question_answer_dict['question_group_id'],
-            engine_wrapper=engine_wrapper,
-            qa_dicts_dir=qa_dicts_dir_checked,
-            vetted_qa_dicts=vetted_qa_dicts,
-            double_check_counter=DOUBLE_CHECK_COUNTER,
-            completion_mode=COMPLETION_MODE,
-            logging_level=LOG_LEVEL,
-        ) for question_answer_dict in generated_qa_dicts
-    ]
-    limited_tasks_q_validation = [run_task_with_limit(task) for task in tasks]
-    for future in tqdmasyncio.tqdm.as_completed(limited_tasks_q_validation):
-            await future
-                
-    
+    # vetted_qa_dicts = []
+    # qa_dicts_dir_checked = os.path.join(config["PATH"]["OUTPUT"], "qatuples_filtered")
+    # if not os.path.exists(qa_dicts_dir_checked):
+    #     os.makedirs(qa_dicts_dir_checked)
+
+    # tasks = [
+    #     steps.vet_question_loop(
+    #         question_answer_dict,
+    #         question_group_id=question_answer_dict['question_group_id'],
+    #         engine_wrapper=engine_wrapper,
+    #         qa_dicts_dir=qa_dicts_dir_checked,
+    #         vetted_qa_dicts=vetted_qa_dicts,
+    #         double_check_counter=DOUBLE_CHECK_COUNTER,
+    #         completion_mode=COMPLETION_MODE,
+    #         logging_level=LOG_LEVEL,
+    #     ) for question_answer_dict in generated_qa_dicts
+    # ]
+    # limited_tasks_q_validation = [run_task_with_limit(task) for task in tasks]
+    # for future in tqdmasyncio.tqdm.as_completed(limited_tasks_q_validation):
+    #     await future
+
+    vetted_qa_dicts = generated_qa_dicts
+
+    if not list(filter(None, vetted_qa_dicts)):
+        raise ValueError("No QA dicts survived vetting")
+
     if WORK_IN_PHASES and PHASE_INDEX == 2:
         print("EXITING DUE TO config.yaml SETTINGS AROUND PHASES; SET TO ONLY EXECUTE PHASE 2 RIGHT NOW")
         sys.exit(0)
@@ -349,7 +350,6 @@ async def main():
     print("---------------- ONTO REVISION ------------------")
 
     # Assuming vetted_qa_tuples is a list that might or might not exist
-    
     if not SKIP_REPAIR_QA_TUPLES:
         tasks = [
             steps.repair_qatuple_context( # NOTE PROBLEM in that things that this writes, do not have enough items in the tuple
@@ -363,6 +363,7 @@ async def main():
         limited_tasks_qcorrection = [run_task_with_limit(task) for task in tasks]
         for future in tqdmasyncio.tqdm.as_completed(limited_tasks_qcorrection):
             await future
+        breakpoint()
         print("-------------- QUESTIONS REVISED ------------- STATS SO FAR:")
         nones = list(filter(lambda x: x is None, vetted_qa_dicts))
         print(f"Nones: {len(nones)}")
@@ -373,9 +374,15 @@ async def main():
         print("---------------- ONTO EXAMPLES GENERATION-------------------")
     else:
         print("Skipping question repair")
-        
+
+    if not vetted_qa_dicts:
+        raise ValueError("No QA dicts survived repair")
+
+    breakpoint()
     # filter questions and answers using filter_the_text
     vetted_qa_dicts = [qadict for qadict in vetted_qa_dicts if filter_the_text(qadict["question"]) and filter_the_text(qadict["answer"])]
+    if not vetted_qa_dicts:
+        raise ValueError("No QA dicts passed the filter text")
 
     qa_dicts_by_text = augmentoolkit.utils.group_by_text.group_by_text(vetted_qa_dicts)
     
@@ -402,7 +409,7 @@ async def main():
 
         print("Converting conversational data generations to training data")
         steps.convert_logging_to_dataset(input_pth=os.path.join("multi_turn_convs", "intermediate_generations"), output_pth="multi_turn_convs")
-        
+
         # Make ShareGPT dataset
         steps.convert_directory_to_list(
             os.path.join(config["PATH"]["OUTPUT"],"multi_turn_convs", "saved_readable_generations")

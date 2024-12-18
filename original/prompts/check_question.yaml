@@ -36,7 +36,7 @@
     #### Depth Match: The text provides the necessary level of detail to answer the question, though it remains descriptive and does not delve into deeper explanatory mechanisms.
     
     ### Critical Evaluation and Final Judgment:
-    The text addresses both components of the question with sufficient detail, making it: Relevant.
+    Relevant
 - role: user
   content: |
     Text: 
@@ -62,7 +62,7 @@
     #### Depth Match: The text lacks the specific scientific principles explaining the mechanism of sunlight absorption by chlorophyll, which is central to the question.
     
     ### Critical Evaluation and Final Judgment:
-    Although the text touches upon the role of chlorophyll, it does not provide the depth of explanation required by the question, making it: Irrelevant.
+    Irrelevant
 - role: user
   content: |
     Text: 
@@ -88,7 +88,7 @@
     #### Depth Match: The text does not provide information about the role of the central brain in this process, lacking the required depth on the control mechanism.
     
     ### Critical Evaluation and Final Judgment:
-    Given the text's coverage of color-changing but lack of detail on the central brain's role, the overall assessment of the question's relevance to the text is: Irrelevant.
+    Irrelevant
 - role: user
   content: |
     Text: 

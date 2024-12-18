@@ -1,10 +1,10 @@
 API:
-  LARGE_MODEL: meta-llama/Meta-Llama-3.1-70B-Instruct
   LARGE_API_KEY: key-here
-  LARGE_BASE_URL: https://api.deepinfra.com/v1/openai
+  LARGE_MODEL: llama3.2
+  LARGE_BASE_URL: http://localhost:11434/v1
   LARGE_MODE: api
-  SMALL_MODEL: meta-llama/Meta-Llama-3.1-8B-Instruct
-  SMALL_BASE_URL: https://api.deepinfra.com/v1/openai
+  SMALL_MODEL: llama3.2
+  SMALL_BASE_URL: http://localhost:11434/v1
   SMALL_API_KEY: key-here
   SMALL_MODE: api
 HUGGINGFACE:
@@ -13,7 +13,7 @@ HUGGINGFACE:
   PUSH_TO_HUB: False
 PATH:
   DEFAULT_PROMPTS: ./prompts
-  INPUT: ./input
+  INPUT: ./input/readme
   OUTPUT: ./output
   PROMPTS: ./prompts
 PHASE:
@@ -21,7 +21,7 @@ PHASE:
   WORK_IN_PHASES: False
 SKIP:
   ANSWER_RELEVANCY_CHECK: False
-  REPAIR_QA_TUPLES: False
+  REPAIR_QA_TUPLES: True
   FILTER_CHUNKS: False
   QUESTION_CHECK: False
   CONVERSATION_GENERATION: False
@@ -33,12 +33,7 @@ SYSTEM:
     a generalist, generic AI assistant, and a human.
   DOUBLE_CHECK_COUNTER: 1
   DO_NOT_USE_SYSTEM_PROMPTS: False
-  FINAL_ASSISTANT_PROMPTS_NO_RAG: [
-  'You are a helpful AI assistant.',
-  'You are A VASTLY intelligent ARTIFICIAL INTELLIGENCE with DOMAIN-EXPERT KNOWLEDGE from a variety of fields.
-  
-  USE your knowledge to be helpful and truthfully answer questions about the world.',
-  "u are ai asstant plz answr questions"] # a wide variety of system prompts helps the AI learn better. What, you expect your users to spell things right?
+  FINAL_ASSISTANT_PROMPTS_NO_RAG: ['You are a helpful AI assistant.']
   FINAL_ASSISTANT_PROMPTS_RAG: [
   'You are a helpful AI assistant. Some knowledge:
   
@@ -55,7 +50,7 @@ SYSTEM:
   STOP: True
   SUBSET_SIZE: 20
   USE_FILENAMES: False
-  USE_SUBSET: True
+  USE_SUBSET: False
   RAG_FAILURE_PERCENTAGE: 0.1 # How much of the RAG data has the wrong chunk retrieved deliberately? To train it to answer correctly even if wrong facts are shown to it. We will need another dataset thing for making data where the question asks something that is not present and the rag retrieves something irrelevant obbviously and it is supposed to say "I don't know" or something.
 SCRAPING:
   USE_GUTENBERG: False
